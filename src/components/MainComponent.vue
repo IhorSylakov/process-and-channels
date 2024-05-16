@@ -197,6 +197,16 @@
     display: inline-flex;
     align-items: center;
     border: 1px solid var(--theme-color);
+
+    &::after {
+      content: '';
+      inset: 0;
+      left: auto;
+      z-index: 1;
+      width: 25px;
+      position: absolute;
+      background: linear-gradient(to left, var(--theme-bg-color) 50%, transparent 100%);
+    }
   }
 
   .resizer-x {
