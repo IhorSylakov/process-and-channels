@@ -1,6 +1,23 @@
 <template>
   <div class="app">
     <ul class="process-list">
+      <li
+        v-for="process in processList"
+        :key="process.id"
+        :class="['process-item', {'is-active': activeProcess === process.name}]"
+      >
+        <button
+          class="process-button"
+          @click="setProcessType(process.name)"
+        >
+          <img
+            height="60"
+            width="75"
+            :alt="process.name"
+            :src="require(`./assets/${process.name}.svg`)"
+          >
+        </button>
+      </li>
       <li class="process-item">
         <input
           type="number"
@@ -10,19 +27,6 @@
           @input="updateChannelsCount"
           @keydown="preventOutOfRangeInput"
         >
-      </li>
-      <li
-        v-for="process in processList"
-        :key="process.id"
-        :class="['process-item', {'is-active': activeProcess === process.name}]"
-        @click="setProcessType(process.name)"
-      >
-          <img
-            height="60"
-            width="75"
-            :alt="process.name"
-            :src="require(`./assets/${process.name}.svg`)"
-          >
       </li>
     </ul>
     <MainComponent
@@ -141,7 +145,6 @@
   }
 
   .process-item {
-    padding: 10px;
     min-width: 100px;
     display: flex;
     align-items: center;
@@ -155,5 +158,12 @@
     input {
       font-size: 24px;
     }
+  }
+
+  .process-button {
+    margin: 0;
+    border: 0;
+    padding: 10px;
+    background: transparent;
   }
 </style>
