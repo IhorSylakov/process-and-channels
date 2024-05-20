@@ -5,17 +5,17 @@
   >
     <div
       class="process-and-channels"
-      :style="styles"
+      :style="getGeneralStyles"
     >
       <div
         :class="['process', `process--${processType}`]"
-        :style="processType === 'non-linear' ? nonLinearStyles(containerWidth) : ''"
+        :style="getNonLinearStyles()"
       >
         <div
           v-for="channel in channels"
           :key="channel.id"
           :class="[ 'channel', `channel--${processType}` ]"
-          :style="processType === 'ongoing' ? ongoingStyles(channel.id) : ''"
+          :style="getOngoingStyles(channel.id)"
         >
           <div class="channel__item">
             <div class="channel__item-icon">
@@ -30,7 +30,7 @@
 
           <div
             class="channel__item-text"
-            :style="processType === 'ongoing' ? position(channel.id) : ''"
+            :style="getChannelVerticalPosition(channel.id)"
           >
             <div contenteditable="true">{{ channel.text }}</div>
           </div>
@@ -54,12 +54,18 @@
 </template>
 
 <script>
+  const containerMinWidth = 350;
+  const containerMinHeight = 160;
+
   export default {
     name: 'MainComponent',
     props: {
       processType: {
         type: String,
         default: 'ongoing',
+        validator: function(value) {
+          return ['ongoing', 'linear', 'non-linear', 'bidirectional'].includes(value);
+        }
       },
       channels: {
         type: Array,
@@ -75,8 +81,6 @@
         startHeight: 0,
         diametr: 200,
         containerWidth: 558,
-        containerMinWidth: 300,
-        containerMinHeight: 200,
       };
     },
     computed: {
@@ -84,25 +88,25 @@
         // + 1 because arrow also take place on process line and affects calculations
         return this.channels.length + 1;
       },
-      styles() {
+
+      getGeneralStyles() {
         const width = `width: ${this.containerWidth}px;`;
         const computedStyles = `--min-width: ${this.containerWidth}px;`;
         const channelsCount = `--channels-count: ${this.channels.length};`;
         const radius = `--circle-radius: ${this.diametr / 2}px;`;
 
-        return width + computedStyles + channelsCount + radius;
+        return `${width} ${computedStyles} ${channelsCount} ${radius}`;
       },
     },
     methods: {
       ongoingChannelDegree(id) {
         const itemsCount = this.channelsCount;
         const angle = 360 / itemsCount;
-        const degree = angle * id - 90;
 
-        return degree;
+        return angle * id - 90;
       },
 
-      position(id) {
+      getChannelVerticalPosition(id) {
         const degree = this.ongoingChannelDegree(id);
         const temp = degree < 0 ? 360 + degree : degree;
         const posVertical = temp < 181 ? 'top: 100%' : 'bottom: 100%';
@@ -110,32 +114,34 @@
 
         if (degree > 90) {
           posHorizontal = 'right: 25%';
-        } else if (degree < 90) {
+        }
+        if (degree < 90) {
           posHorizontal = 'left: 25%';
         }
 
-        return `${posVertical}; ${posHorizontal};`;
+        return this.processType === 'ongoing' ? `${posVertical}; ${posHorizontal};` : '';
       },
 
-      ongoingStyles(id) {
+      getOngoingStyles(id) {
         const degree = this.ongoingChannelDegree(id);
         const sin = Math.sin(degree * (Math.PI / 180)).toFixed(4);
         const cos = Math.cos(degree * (Math.PI / 180)).toFixed(4);
 
-        return `--sin: ${sin}; --cos: ${cos};`;
+        return this.processType === 'ongoing' ? `--sin: ${sin}; --cos: ${cos};` : '';
       },
 
-      nonLinearStyles(fullWidth) {
+      getNonLinearStyles() {
         const itemHeight = 120;
         const sideIndents = 150;
         const minWidth = 50;
         const maxWidth = 150;
-        const computedWidth = (fullWidth - sideIndents) / this.channelsCount;
+        const computedWidth = (this.containerWidth - sideIndents) / this.channelsCount;
         let itemWidth = computedWidth;
 
         if (computedWidth < minWidth) {
           itemWidth = minWidth;
-        } else if (computedWidth > maxWidth) {
+        }
+        if (computedWidth > maxWidth) {
           itemWidth = maxWidth;
         }
 
@@ -147,7 +153,7 @@
         // but Math.atan() return in radians, so we need convert it
         const degree = Math.atan(itemWidth / itemHeight) / (Math.PI / 180);
 
-        return `--height: ${hypotenuse}px; --degree: ${degree}deg; --item-width: ${itemWidth}px;`;
+        return this.processType === 'non-linear' ? `--height: ${hypotenuse}px; --degree: ${degree}deg; --item-width: ${itemWidth}px;` : '';
       },
 
       startDragX(event) {
@@ -160,7 +166,7 @@
       doDragX(event) {
         if (this.isDragging) {
           const deltaX = event.clientX - this.startX;
-          this.containerWidth = Math.max(this.containerMinWidth, this.startWidth + deltaX);
+          this.containerWidth = Math.max(containerMinWidth, this.startWidth + deltaX);
         }
       },
       stopDragX() {
@@ -171,7 +177,7 @@
 
       startDragY(event) {
         this.isDragging = true;
-        this.startHeight = this.diametr + 110;
+        this.startHeight = this.diametr;
         this.startY = event.clientY;
         document.addEventListener('mousemove', this.doDragY);
         document.addEventListener('mouseup', this.stopDragY);
@@ -179,7 +185,7 @@
       doDragY(event) {
         if (this.isDragging) {
           const deltaY = event.clientY - this.startY;
-          this.diametr = Math.max(this.containerMinHeight, this.startHeight + deltaY) - 110;
+          this.diametr = Math.max(containerMinHeight, this.startHeight + deltaY);
         }
       },
       stopDragY() {
@@ -249,6 +255,7 @@
   }
 
   .process-and-channels {
+    --stroke-color: lightcoral;
     --stroke-width: 8px;
     --side-paddings: 75px;
     --ongoing-koef: 0.8;
@@ -266,7 +273,7 @@
       position: absolute;
       height: var(--arrowSize);
       width: var(--arrowSize);
-      border: solid #c4c4c4;
+      border: solid var(--stroke-color);
       border-width: var(--stroke-width) var(--stroke-width) 0 0;
     }
   }
@@ -331,7 +338,7 @@
     min-width: calc(20px + 80px * var(--channels-count));
     padding-right: 10px;
     margin: 32px 0 62px;
-    background: #c4c4c4;
+    background: var(--stroke-color);
     border-radius: 4px;
 
     &::after {
@@ -386,7 +393,7 @@
     min-width: calc(20px + 80px * var(--channels-count));
     padding: 0 10px;
     margin: 32px 0 62px;
-    background: #c4c4c4;
+    background: var(--stroke-color);
     border-radius: 4px;
 
     &::before {
@@ -394,7 +401,7 @@
       position: absolute;
       height: var(--arrowSize);
       width: var(--arrowSize);
-      border: solid #c4c4c4;
+      border: solid var(--stroke-color);
       border-width: var(--stroke-width) var(--stroke-width) 0 0;
       left: -5px;
       top: calc(-0.5 * (var(--channel-icon-size) - var(--stroke-width)));
@@ -449,7 +456,7 @@
     margin: 10px auto 50px;
 
     &::before {
-      border: var(--stroke-width) solid #c4c4c4;
+      border: var(--stroke-width) solid var(--stroke-color);
       border-radius: 100%;
       content: '';
       min-width: calc(((var(--min-width) - var(--side-paddings) * 2) * var(--ongoing-koef)));
@@ -504,7 +511,7 @@
       content: '';
       width: var(--stroke-width);
       height: var(--height);
-      background: #c4c4c4;
+      background: var(--stroke-color);
       transform: rotate(calc(-1 * var(--degree)));
       position: absolute;
       bottom: 0;
@@ -545,7 +552,7 @@
       content: '';
       width: var(--stroke-width);
       height: var(--height);
-      background: #c4c4c4;
+      background: var(--stroke-color);
       transform: rotate(var(--degree));
       position: absolute;
       bottom: 0;

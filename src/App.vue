@@ -52,15 +52,15 @@
             name: 'ongoing',
           },
           {
-            id: 3,
+            id: 2,
             name: 'linear',
           },
           {
-            id: 2,
+            id: 3,
             name: 'non-linear',
           },
           {
-            id: 3,
+            id: 4,
             name: 'bidirectional',
           },
         ],
